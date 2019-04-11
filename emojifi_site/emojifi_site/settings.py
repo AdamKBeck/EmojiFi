@@ -11,6 +11,11 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import os.path
+import random
+import sys
+
+IS_DEV = (len(sys.argv) > 1 and sys.argv[1] == 'runserver')
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,13 +24,25 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.1/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'pg(hj))ob%tfk7$uz1o_xq4l9#$nk@q)u)qls*pef)f7@ieg83'
+_secret_key_path = os.path.join(BASE_DIR, 'SECRET_KEY')
+if not os.path.isfile(_secret_key_path):
+    with open(_secret_key_path, 'w') as secret_key_file:
+        random_secret_key = ''.join(
+            random.SystemRandom().choice(
+                'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+            )
+            for i in range(50)
+        )
+
+        secret_key_file.write(random_secret_key)
+
+with open(_secret_key_path, 'r') as secret_key_file:
+    SECRET_KEY = secret_key_file.read()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = IS_DEV
 
-ALLOWED_HOSTS = ['localhost', '3.18.14.202']
+ALLOWED_HOSTS = ['localhost', '3.18.14.202', '.emojifythis.org', 'emojifythis.org']
 
 
 # Application definition
@@ -56,13 +73,18 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
-        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+            ],
+            'loaders': [
+                ('django.template.loaders.cached.Loader', [
+                    'django.template.loaders.filesystem.Loader',
+                    'django.template.loaders.app_directories.Loader',
+                ]),
             ],
         },
     },
@@ -119,3 +141,11 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
+        'LOCATION': '127.0.0.1:11211',
+    }
+}

@@ -1,12 +1,17 @@
 import json
-from ..analyzer.analyzer import emojifi_text as emojifi_text_by_search
-from ..analyzer.analyzer import clappifi_text as emojifi_text_by_clap
-from ..analyzer.analyzer import memeifi_text as emojifi_text_by_meme
+
+
+from emojifi.emojifiers.clap import clappify_text
+from emojifi.emojifiers.spongebob import spongebobify_text
+from emojifi.emojifiers.emojipasta import emojify_text
+from datetime import datetime
+import numpy as np
+import random
 
 TYPE_TO_DISPATCH_FUNC = {
-    'search': emojifi_text_by_search,
-    'clap': emojifi_text_by_clap,
-    'meme': emojifi_text_by_meme,
+    'search': emojify_text,
+    'clap': clappify_text,
+    'spongebob': spongebobify_text,
 }
 
 
@@ -14,21 +19,21 @@ def dispatch_request(request):
     """ Dispatches the POST request to the appropriate analyzer functions """
     json_request = json.loads(request.body.decode('utf-8'))
     text = json_request['text']
+    seed_randoms()
 
     if 'type' in json_request:
         dispatch_func = TYPE_TO_DISPATCH_FUNC[json_request['type']]
-        obj = EmojifiCompositon(text, dispatch_func)
     else:
-        obj = EmojifiCompositon(text, emojifi_text_by_search)
+        dispatch_func = emojify_text
 
-    return _emojifi(obj)
-
-
-def _emojifi(obj):
-    return obj.dispatch_func(obj.text)
+    return dispatch_func(text[0:1000])  # Limit to the first 1000 characters
 
 
-class EmojifiCompositon:
-    def __init__(self, text, dispatch_func):
-        self.text = text
-        self.dispatch_func = dispatch_func
+def seed_randoms():
+    """
+    Seed randoms to create deterministic responses
+    """
+    current_date = datetime.now()
+    seed_value = int(f'{current_date.year}{current_date.month}{current_date.day}{current_date.hour}')
+    random.seed(seed_value)
+    np.random.seed(seed_value)

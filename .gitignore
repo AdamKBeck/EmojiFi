@@ -12,4 +12,7 @@ __pycache__
 .directory
 *.sqlite3
 .idea/
-*emoji_search_files*
+emoji_search/emojisearch/generated*
+emojifi_site/static/
+SECRET_KEY
+*.swp
